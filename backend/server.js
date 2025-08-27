@@ -6,7 +6,15 @@ const songRoute = require('./src/routes/song.routes')
 
 const app = express()
 app.use(express.json())
-app.use(cors()) // ✅ allow frontend to call backend
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://moody-player-3-01bn.onrender.com'
+  ],
+  methods: ['GET','POST','PUT','DELETE'],
+  credentials: true, 
+  allowedHeaders: ['Content-Type','Authorization'],
+})) // ✅ allow frontend to call backend
 app.use('/songs', songRoute)
 
 connectDB()

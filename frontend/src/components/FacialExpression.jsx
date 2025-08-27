@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
 import "./FacialExpression.css";
 import axios from "axios";
+import server from "../environment";
 
 export default function FacialExpression() {
   const videoRef = useRef(null);
@@ -81,7 +82,7 @@ export default function FacialExpression() {
       setLoading(true);
       setSongs([]);
 
-      const url = `http://localhost:3000/songs?mood=${encodeURIComponent(
+      const url = `${server}/songs?mood=${encodeURIComponent(
         bestExpression
       )}&_=${Date.now()}`;
 
