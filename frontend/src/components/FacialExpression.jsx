@@ -1,198 +1,230 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
-import "./FacialExpression.css";
 import axios from "axios";
-import server from "../environment";
+import "./FacialExpression.css";
 
 export default function FacialExpression() {
   const videoRef = useRef(null);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [expression, setExpression] = useState("Not detected");
-  const [songs, setSongs] = useState([]);
+  const [recommendedSongs, setRecommendedSongs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [currentPlaying, setCurrentPlaying] = useState(null);
 
-  // Load models & start camera
+  // Upload Song States
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [mood, setMood] = useState("");
+  const [audio, setAudio] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+
+  // Play/Pause States
+  const [currentAudio, setCurrentAudio] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(null);
+
+  // ✅ Load Face API Models
   useEffect(() => {
-    let mounted = true;
-
-    const loadModelsAndStartVideo = async () => {
-      try {
-        const MODEL_URL = "/models";
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-        if (mounted) setModelsLoaded(true);
-      } catch (err) {
-        console.error("Error loading face-api models:", err);
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (err) {
-        console.error("Error accessing webcam:", err);
-      }
+    const loadModels = async () => {
+      const MODEL_URL = "/models";
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+      ]);
+      setModelsLoaded(true);
     };
-
-    loadModelsAndStartVideo();
-
-    return () => {
-      mounted = false;
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-      }
-    };
+    loadModels();
   }, []);
 
-  // Detect mood
-  const detectMood = async () => {
-    setError(null);
-
-    if (!videoRef.current) {
-      setError("Video element not initialized");
-      return;
+  // ✅ Start webcam stream
+  useEffect(() => {
+    if (modelsLoaded) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+        videoRef.current.srcObject = stream;
+      });
     }
+  }, [modelsLoaded]);
 
+  // ✅ Detect Expressions
+  const detectExpression = async () => {
+    if (!videoRef.current) return;
+    const detections = await faceapi
+      .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+      .withFaceExpressions();
+
+    if (detections.length > 0) {
+      const exp = detections[0].expressions;
+      const maxExp = Object.keys(exp).reduce((a, b) =>
+        exp[a] > exp[b] ? a : b
+      );
+      setExpression(maxExp);
+      fetchSongs(maxExp);
+    } else {
+      setExpression("No face detected");
+    }
+  };
+
+  // ✅ Fetch Recommended Songs
+  const fetchSongs = async (mood) => {
     try {
-      const detections = await faceapi
-        .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-        .withFaceExpressions();
-
-      if (!detections || detections.length === 0) {
-        setExpression("No face detected");
-        setSongs([]);
-        return;
-      }
-
-      const expressions = detections[0].expressions || {};
-      let maxProb = 0;
-      let bestExpression = "neutral";
-
-      for (const [key, value] of Object.entries(expressions)) {
-        if (value > maxProb) {
-          maxProb = value;
-          bestExpression = key;
-        }
-      }
-
-      const mood = bestExpression.charAt(0).toUpperCase() + bestExpression.slice(1);
-      setExpression(mood);
-
       setLoading(true);
-      setSongs([]);
-
-      const url = `${server}/songs?mood=${encodeURIComponent(
-        bestExpression
-      )}&_=${Date.now()}`;
-
-      const response = await axios.get(url, { timeout: 10000 });
-
-      let returnedSongs = [];
-      if (Array.isArray(response.data)) {
-        returnedSongs = response.data;
-      } else if (Array.isArray(response.data.songs)) {
-        returnedSongs = response.data.songs;
-      } else if (Array.isArray(response.data.data)) {
-        returnedSongs = response.data.data;
-      } else {
-        for (const v of Object.values(response.data || {})) {
-          if (Array.isArray(v)) {
-            returnedSongs = v;
-            break;
-          }
-        }
-      }
-
-      setSongs(returnedSongs);
+      const res = await axios.get(`http://localhost:3000/songs?mood=${mood}`);
+      setRecommendedSongs(res.data.songs || []);
     } catch (err) {
-      console.error("Error in detectMood / API call:", err);
-      setError(err.message || String(err));
+      console.error("Error fetching songs:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Play/Pause logic
-  const togglePlay = (idx) => {
-    const audio = document.getElementById(`audio-${idx}`);
-
-    if (currentPlaying !== null && currentPlaying !== idx) {
-      const prevAudio = document.getElementById(`audio-${currentPlaying}`);
-      if (prevAudio) prevAudio.pause();
+  // ✅ Handle Song Upload
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!title || !artist || !mood || !audio) {
+      setUploadMessage("⚠️ Please fill all fields!");
+      return;
     }
 
-    if (audio.paused) {
-      audio.play();
-      setCurrentPlaying(idx);
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("artist", artist);
+    formData.append("mood", mood);
+    formData.append("audio", audio);
+
+    try {
+      setUploading(true);
+      const res = await axios.post("http://localhost:3000/songs", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setUploadMessage(`✅ ${res.data.message}`);
+      setTitle("");
+      setArtist("");
+      setMood("");
+      setAudio(null);
+
+      // Refresh recommended songs if same mood uploaded
+      if (expression.toLowerCase() === mood.toLowerCase()) {
+        fetchSongs(mood);
+      }
+    } catch (err) {
+      setUploadMessage(
+        `❌ Upload failed: ${err.response?.data?.error || err.message}`
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ✅ Play/Pause Handler
+  const handlePlayPause = (index, audioUrl) => {
+    if (currentAudio && isPlaying === index) {
+      currentAudio.pause();
+      setIsPlaying(null);
     } else {
-      audio.pause();
-      setCurrentPlaying(null);
+      if (currentAudio) {
+        currentAudio.pause();
+      }
+      const newAudio = new Audio(audioUrl);
+      newAudio.play();
+      setCurrentAudio(newAudio);
+      setIsPlaying(index);
+
+      newAudio.onended = () => setIsPlaying(null);
     }
   };
 
   return (
     <div className="app-container">
-      <h1 className="title">🎧 Live Mood Detection</h1>
+      <h1 className="title">🎭 Facial Expression Music Recommender</h1>
 
+      {/* Top Section */}
       <div className="top-section">
-        <video ref={videoRef} autoPlay muted className="video-box" />
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          className="video-box"
+          onPlay={detectExpression}
+        ></video>
+
         <div className="info-box">
-          <p>
-            Click <b>Detect Mood</b> to analyze your face and fetch songs.
-          </p>
-
-          <button className="detect-btn" onClick={detectMood} disabled={loading}>
-            {loading ? "Detecting..." : "Detect Mood"}
+          <button className="detect-btn" onClick={detectExpression}>
+            Detect Mood 🎯
           </button>
-
           <p className="mood-text">
-            Detected Mood: <b>{expression}</b>
+            Detected Mood: <strong>{expression}</strong>
           </p>
-          {error && <p style={{ color: "crimson" }}>Error: {error}</p>}
         </div>
       </div>
 
+      {/* Recommended Songs */}
       <div className="tracks-section">
-        <h3>
-          🎶 Recommended Tracks{" "}
-          {expression &&
-          expression !== "Not detected" &&
-          expression !== "No face detected"
-            ? `for ${expression}`
-            : ""}
-        </h3>
-
-        {loading && <p>Loading songs…</p>}
-
-        <div className="track-grid">
-          {songs.length > 0 ? (
-            songs.map((track, idx) => {
-              const key = track.id || track.audio || `${track.title}-${idx}`;
-              return (
-                <div key={key} className="track-card">
-                  <div className="track-details">
-                    <span className="track-title">{track.title}</span>
-                    <span className="track-artist">{track.artist}</span>
-                  </div>
-                  <div className="audio-player">
-                    <audio id={`audio-${idx}`} src={track.audio}></audio>
-                    <button
-                      className={`play-pause-btn ${
-                        currentPlaying === idx ? "pause" : "play"
-                      }`}
-                      onClick={() => togglePlay(idx)}
-                    >
-                      {currentPlaying === idx ? "⏸️" : "▶️"}
-                    </button>
-                  </div>
+        <h3>🎵 Recommended Songs</h3>
+        {loading ? (
+          <p>Loading songs...</p>
+        ) : recommendedSongs.length === 0 ? (
+          <p>No songs found for this mood 😢</p>
+        ) : (
+          <div className="track-grid">
+            {recommendedSongs.map((song, index) => (
+              <div key={index} className="track-card">
+                <div className="track-details">
+                  <span className="track-title">{song.title}</span>
+                  <span className="track-artist">{song.artist}</span>
                 </div>
-              );
-            })
-          ) : (
-            !loading && <p>No songs available. Click "Detect Mood".</p>
-          )}
-        </div>
+                <div className="audio-player">
+                  <button
+                    className="play-pause-btn"
+                    onClick={() => handlePlayPause(index, song.audio)}
+                  >
+                    {isPlaying === index ? "⏸" : "▶️"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Upload New Song */}
+      <div className="tracks-section" style={{ marginTop: "30px" }}>
+        <h3>📤 Upload Your Song</h3>
+        <form
+          onSubmit={handleUpload}
+          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+        >
+          <input
+            type="text"
+            placeholder="Song Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Artist Name"
+            value={artist}
+            onChange={(e) => setArtist(e.target.value)}
+            required
+          />
+          <select value={mood} onChange={(e) => setMood(e.target.value)} required>
+            <option value="">Select Mood</option>
+            <option value="happy">Happy</option>
+            <option value="sad">Sad</option>
+            <option value="angry">Angry</option>
+            <option value="surprised">Surprised</option>
+            <option value="neutral">Neutral</option>
+          </select>
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => setAudio(e.target.files[0])}
+            required
+          />
+          <button type="submit" className="detect-btn" disabled={uploading}>
+            {uploading ? "Uploading..." : "Upload Song"}
+          </button>
+        </form>
+        {uploadMessage && <p style={{ marginTop: "10px" }}>{uploadMessage}</p>}
       </div>
     </div>
   );

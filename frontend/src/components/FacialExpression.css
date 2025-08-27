@@ -172,9 +172,11 @@ body {
   box-shadow: 0 0 20px rgba(106, 0, 244, 0.6);
 }
 
-audio {
-  display: none;
+.audio-player audio {
+  display: block !important;
+  width: 100%;
 }
+
 
 /* ✅ Responsive Design */
 @media screen and (max-width: 768px) {
