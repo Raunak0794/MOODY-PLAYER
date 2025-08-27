@@ -1,0 +1,181 @@
+/* General Layout */
+body {
+  background: linear-gradient(-45deg, #6a00f4, #00d4ff, #ff00d4, #ff7a00);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  font-family: "Poppins", sans-serif;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
+.app-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  color: #222;
+}
+
+.title {
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 25px;
+  text-align: center;
+  color: #2d2d2d;
+}
+
+/* Top Section Layout */
+.top-section {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  justify-content: center;
+}
+
+.video-box {
+  width: 320px;
+  height: 240px;
+  border-radius: 16px;
+  border: 3px solid #6a00f4;
+  box-shadow: 0 10px 25px rgba(106, 0, 244, 0.3);
+  object-fit: cover;
+}
+
+.info-box {
+  flex: 1;
+  margin-top: 20px;
+}
+
+.detect-btn {
+  background: linear-gradient(135deg, #6a00f4, #9b00ff);
+  color: #fff;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.detect-btn:hover {
+  background: linear-gradient(135deg, #5200c9, #7b00e6);
+  transform: scale(1.05);
+}
+
+.mood-text {
+  margin-top: 12px;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Tracks Section */
+.tracks-section {
+  margin-top: 30px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.tracks-section h3 {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #222;
+  text-align: center;
+}
+
+/* Track Grid Layout */
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+/* Track Card */
+.track-card {
+  background: #fdfaff;
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: row;          /* ✅ Now items will be in a row */
+  justify-content: space-between; /* ✅ Pushes play button to the end */
+  align-items: center;          /* ✅ Centers items vertically */
+  gap: 16px;                    /* ✅ Adds spacing between items */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+
+.track-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(106, 0, 244, 0.2);
+}
+
+/* Track Details */
+.track-details {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.track-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #222;
+  display: block;
+}
+
+.track-artist {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Custom Play Button */
+.audio-player {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.play-pause-btn {
+  background: transparent;       /* No background color */
+  color: #6a00f4;                /* 🎨 Icon color */
+  border: 2px solid #6a00f4;     /* ✅ Thinner circular border */
+  border-radius: 20%;            /* ✅ Perfect circle */
+  font-size: 40px;               /* ✅ Icon size stays big */
+  width: 1.3em;                  /* 🔹 Smaller circle */
+  height: 1.3em;                 /* 🔹 Matches width */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(106, 0, 244, 0.3);
+  transition: all 0.3s ease;
+}
+
+.play-pause-btn:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 20px rgba(106, 0, 244, 0.6);
+}
+
+
+
+
+
+
+
+audio {
+  display: none;
+}
