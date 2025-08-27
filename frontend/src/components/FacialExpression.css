@@ -4,6 +4,8 @@ body {
   background-size: 400% 400%;
   animation: gradientBG 15s ease infinite;
   font-family: "Poppins", sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 @keyframes gradientBG {
@@ -18,7 +20,6 @@ body {
   }
 }
 
-
 .app-container {
   max-width: 1000px;
   margin: 40px auto;
@@ -27,7 +28,7 @@ body {
 }
 
 .title {
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   margin-bottom: 25px;
   text-align: center;
@@ -37,8 +38,9 @@ body {
 /* Top Section Layout */
 .top-section {
   display: flex;
+  flex-wrap: wrap; /* ✅ Enables responsive wrapping */
   gap: 24px;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 40px;
   justify-content: center;
 }
@@ -54,7 +56,9 @@ body {
 
 .info-box {
   flex: 1;
-  margin-top: 20px;
+  min-width: 250px;
+  margin-top: 10px;
+  text-align: center;
 }
 
 .detect-btn {
@@ -110,14 +114,12 @@ body {
   padding: 16px;
   border-radius: 16px;
   display: flex;
-  flex-direction: row;          /* ✅ Now items will be in a row */
-  justify-content: space-between; /* ✅ Pushes play button to the end */
-  align-items: center;          /* ✅ Centers items vertically */
-  gap: 16px;                    /* ✅ Adds spacing between items */
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
 }
-
 
 .track-card:hover {
   transform: translateY(-5px);
@@ -150,13 +152,13 @@ body {
 }
 
 .play-pause-btn {
-  background: transparent;       /* No background color */
-  color: #6a00f4;                /* 🎨 Icon color */
-  border: 2px solid #6a00f4;     /* ✅ Thinner circular border */
-  border-radius: 20%;            /* ✅ Perfect circle */
-  font-size: 40px;               /* ✅ Icon size stays big */
-  width: 1.3em;                  /* 🔹 Smaller circle */
-  height: 1.3em;                 /* 🔹 Matches width */
+  background: transparent;
+  color: #6a00f4;
+  border: 2px solid #6a00f4;
+  border-radius: 20%;
+  font-size: 40px;
+  width: 1.3em;
+  height: 1.3em;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -170,12 +172,57 @@ body {
   box-shadow: 0 0 20px rgba(106, 0, 244, 0.6);
 }
 
-
-
-
-
-
-
 audio {
   display: none;
+}
+
+/* ✅ Responsive Design */
+@media screen and (max-width: 768px) {
+  .top-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .video-box {
+    width: 90%;
+    height: auto;
+  }
+
+  .track-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .detect-btn {
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .app-container {
+    padding: 12px;
+  }
+
+  .track-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .audio-player {
+    margin-top: 10px;
+  }
+
+  .play-pause-btn {
+    font-size: 32px;
+    width: 1.2em;
+    height: 1.2em;
+  }
+
+  .track-grid {
+    grid-template-columns: 1fr;
+  }
 }
