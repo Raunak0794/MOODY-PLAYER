@@ -22,6 +22,12 @@ export default function FacialExpression() {
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(null);
 
+  // ✅ API URL: auto-switch between local and deployed
+  const API_URL =
+    window.location.hostname === "localhost"
+      ? "http://localhost:3000"
+      : (import.meta.env.VITE_API_URL || "https://moody-player-k3hh.onrender.com");
+
   // ✅ Load Face API Models
   useEffect(() => {
     const loadModels = async () => {
@@ -37,11 +43,10 @@ export default function FacialExpression() {
 
   // ✅ Start webcam stream
   useEffect(() => {
-    if (modelsLoaded) {
-      navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-        videoRef.current.srcObject = stream;
-      });
-    }
+    if (!modelsLoaded) return;
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    });
   }, [modelsLoaded]);
 
   // ✅ Detect Expressions
@@ -53,9 +58,7 @@ export default function FacialExpression() {
 
     if (detections.length > 0) {
       const exp = detections[0].expressions;
-      const maxExp = Object.keys(exp).reduce((a, b) =>
-        exp[a] > exp[b] ? a : b
-      );
+      const maxExp = Object.keys(exp).reduce((a, b) => (exp[a] > exp[b] ? a : b));
       setExpression(maxExp);
       fetchSongs(maxExp);
     } else {
@@ -64,13 +67,14 @@ export default function FacialExpression() {
   };
 
   // ✅ Fetch Recommended Songs
-  const fetchSongs = async (mood) => {
+  const fetchSongs = async (moodName) => {
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:3000/songs?mood=${mood}`);
+      const res = await axios.get(`${API_URL}/songs?mood=${moodName}`);
       setRecommendedSongs(res.data.songs || []);
     } catch (err) {
       console.error("Error fetching songs:", err);
+      setRecommendedSongs([]);
     } finally {
       setLoading(false);
     }
@@ -92,7 +96,7 @@ export default function FacialExpression() {
 
     try {
       setUploading(true);
-      const res = await axios.post("http://localhost:3000/songs", formData, {
+      const res = await axios.post(`${API_URL}/songs`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setUploadMessage(`✅ ${res.data.message}`);
@@ -106,30 +110,26 @@ export default function FacialExpression() {
         fetchSongs(mood);
       }
     } catch (err) {
-      setUploadMessage(
-        `❌ Upload failed: ${err.response?.data?.error || err.message}`
-      );
+      setUploadMessage(`❌ Upload failed: ${err.response?.data?.error || err.message}`);
     } finally {
       setUploading(false);
     }
   };
 
-  // ✅ Play/Pause Handler
+  // ✅ Play/Pause Handler (uses HTMLAudioElement for reliable playback)
   const handlePlayPause = (index, audioUrl) => {
     if (currentAudio && isPlaying === index) {
       currentAudio.pause();
       setIsPlaying(null);
-    } else {
-      if (currentAudio) {
-        currentAudio.pause();
-      }
-      const newAudio = new Audio(audioUrl);
-      newAudio.play();
-      setCurrentAudio(newAudio);
-      setIsPlaying(index);
-
-      newAudio.onended = () => setIsPlaying(null);
+      return;
     }
+    if (currentAudio) currentAudio.pause();
+
+    const newAudio = new Audio(audioUrl);
+    newAudio.play().catch((e) => console.error("Playback error:", e));
+    setCurrentAudio(newAudio);
+    setIsPlaying(index);
+    newAudio.onended = () => setIsPlaying(null);
   };
 
   return (
@@ -144,8 +144,7 @@ export default function FacialExpression() {
           muted
           className="video-box"
           onPlay={detectExpression}
-        ></video>
-
+        />
         <div className="info-box">
           <button className="detect-btn" onClick={detectExpression}>
             Detect Mood 🎯
@@ -166,7 +165,7 @@ export default function FacialExpression() {
         ) : (
           <div className="track-grid">
             {recommendedSongs.map((song, index) => (
-              <div key={index} className="track-card">
+              <div key={song._id || index} className="track-card">
                 <div className="track-details">
                   <span className="track-title">{song.title}</span>
                   <span className="track-artist">{song.artist}</span>
@@ -175,6 +174,7 @@ export default function FacialExpression() {
                   <button
                     className="play-pause-btn"
                     onClick={() => handlePlayPause(index, song.audio)}
+                    title={isPlaying === index ? "Pause" : "Play"}
                   >
                     {isPlaying === index ? "⏸" : "▶️"}
                   </button>
