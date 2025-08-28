@@ -154,7 +154,7 @@ export default function FacialExpression() {
   // ✅ Handle Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/login");
+    navigate("/auth/login");
   };
 
   return (

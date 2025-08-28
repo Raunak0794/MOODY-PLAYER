@@ -15,7 +15,7 @@ export default function Signup({ setAuth }) {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${server}/auth/signup`, {
+      const res = await axios.post(`${server}/signup`, {
         name,
         email,
         password,
@@ -79,7 +79,7 @@ export default function Signup({ setAuth }) {
       <Typography variant="body2" style={{ marginTop: 10 }}>
         Already have an account?{" "}
         <Link
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/auth/login")}
           style={{ cursor: "pointer", color: "#1976d2" }}
         >
           Login here
