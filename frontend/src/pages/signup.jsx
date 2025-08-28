@@ -15,7 +15,7 @@ export default function Signup({ setAuth }) {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${server}/signup`, {
+      const res = await axios.post(`${server}/auth/signup`, {
         name,
         email,
         password,

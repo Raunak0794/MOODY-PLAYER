@@ -15,12 +15,12 @@ export default function Login({ setAuth }) {
     e.preventDefault();
     try {
       // ✅ API call to backend
-      const res = await axios.post(`${server}/login`, {
+      const res = await axios.post(`${server}/auth/login`, {
         email,
         password,
       });
 
-      // ✅ Save JWT token in localStorage
+      // ✅ Save JWT token in localStorage.
       localStorage.setItem("token", res.data.token);
       setAuth(true);
 
