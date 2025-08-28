@@ -6,13 +6,6 @@ const Song = require('../models/song.model')
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
-
-const auth = require("../middleware/auth");
-
-// Protect upload API
-
-
-
 // POST /songs → add new song
 router.post('/', upload.single("audio"), async (req, res) => {
     try {
