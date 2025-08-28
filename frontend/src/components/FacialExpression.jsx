@@ -2,9 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
 import axios from "axios";
 import "./FacialExpression.css";
+import { Button } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 export default function FacialExpression() {
   const videoRef = useRef(null);
+  const navigate = useNavigate();
+
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [expression, setExpression] = useState("Not detected");
   const [recommendedSongs, setRecommendedSongs] = useState([]);
@@ -27,6 +31,14 @@ export default function FacialExpression() {
     window.location.hostname === "localhost"
       ? "http://localhost:3000"
       : (import.meta.env.VITE_API_URL || "https://moody-player-k3hh.onrender.com");
+
+  // ✅ Check authentication
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login"); // Redirect to login if not authenticated
+    }
+  }, [navigate]);
 
   // ✅ Load Face API Models
   useEffect(() => {
@@ -66,11 +78,14 @@ export default function FacialExpression() {
     }
   };
 
-  // ✅ Fetch Recommended Songs
+  // ✅ Fetch Recommended Songs (with JWT)
   const fetchSongs = async (moodName) => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/songs?mood=${moodName}`);
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_URL}/songs?mood=${moodName}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setRecommendedSongs(res.data.songs || []);
     } catch (err) {
       console.error("Error fetching songs:", err);
@@ -80,7 +95,7 @@ export default function FacialExpression() {
     }
   };
 
-  // ✅ Handle Song Upload
+  // ✅ Handle Song Upload (with JWT)
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!title || !artist || !mood || !audio) {
@@ -96,8 +111,12 @@ export default function FacialExpression() {
 
     try {
       setUploading(true);
+      const token = localStorage.getItem("token");
       const res = await axios.post(`${API_URL}/songs`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
       });
       setUploadMessage(`✅ ${res.data.message}`);
       setTitle("");
@@ -116,7 +135,7 @@ export default function FacialExpression() {
     }
   };
 
-  // ✅ Play/Pause Handler (uses HTMLAudioElement for reliable playback)
+  // ✅ Play/Pause Handler
   const handlePlayPause = (index, audioUrl) => {
     if (currentAudio && isPlaying === index) {
       currentAudio.pause();
@@ -132,8 +151,20 @@ export default function FacialExpression() {
     newAudio.onended = () => setIsPlaying(null);
   };
 
+  // ✅ Handle Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   return (
     <div className="app-container">
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
+        <Button variant="contained" color="secondary" onClick={handleLogout}>
+          Logout
+        </Button>
+      </div>
+
       <h1 className="title">🎭 Facial Expression Music Recommender</h1>
 
       {/* Top Section */}

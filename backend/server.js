@@ -5,6 +5,9 @@ const connectDB = require('./src/db/db');           // keep your existing path
 const songRoute = require('./src/routes/song.routes'); // keep your existing path
 
 const app = express();
+const authRoute = require("./src/routes/auth.routes");
+app.use("/auth", authRoute);
+
 
 app.use(express.json());
 
